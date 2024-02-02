@@ -1,42 +1,58 @@
-// create a web server
-var http = require('http');
-var url = require('url');
-var items = [];
-var server = http.createServer(function (req, res) {
-    switch (req.method) {
-        case 'POST':
-            var item = '';
-            req.setEncoding('utf8');
-            req.on('data', function (chunk) {
-                item += chunk;
-            });
-            req.on('end', function () {
-                items.push(item);
-                res.end('OK\n');
-            });
-            break;
-        case 'GET':
-            var body = items.map(function (item, i) {
-                return i + ') ' + item;
-            }).join('\n');
-            res.setHeader('Content-Length', Buffer.byteLength(body));
-            res.setHeader('Content-Type', 'text/plain; charset="utf-8"');
-            res.end(body);
-            break;
-        case 'DELETE':
-            var path = url.parse(req.url).pathname;
-            var i = parseInt(path.slice(1), 10);
-            if (isNaN(i)) {
-                res.statusCode = 400;
-                res.end('Invalid item id');
-            } else if (!items[i]) {
-                res.statusCode = 404;
-                res.end('Item not found');
-            } else {
-                items.splice(i, 1);
-                res.end('OK\n');
-            }
-            break;
+// create a web server that listens on port 3000
+const http = require('http');
+const fs = require('fs');
+const url = require('url');
+const path = require('path');
+const port = 3000;
+
+const server = http.createServer((req, res) => {
+    const pathname = url.parse(req.url).pathname;
+    const ext = path.parse(pathname).ext;
+    let contentType = 'text/html';
+    let filePath = `.${pathname}`;
+
+    if (ext === '.css') {
+        contentType = 'text/css';
     }
+
+    if (ext === '.js') {
+        contentType = 'text/javascript';
+    }
+
+    if (ext === '.jpg') {
+        contentType = 'image/jpg';
+    }
+
+    if (ext === '.png') {
+        contentType = 'image/png';
+    }
+
+    if (ext === '.gif') {
+        contentType = 'image/gif';
+    }
+
+    if (ext === '.ico') {
+        contentType = 'image/x-icon';
+    }
+
+    fs.readFile(filePath, (error, content) => {
+        if (error) {
+            if (error.code === 'ENOENT') {
+                fs.readFile('./404.html', (error, content) => {
+                    res.writeHead(404, { 'Content-Type': 'text/html' });
+                    res.end(content, 'utf-8');
+                });
+            } else {
+                res.writeHead(500);
+                res.end(`Sorry, check with the site admin for error: ${error.code}`);
+            }
+        } else {
+            res.writeHead(200, { 'Content-Type': contentType });
+            res.end(content, 'utf-8');
+        }
+    });
 });
-console.log('\n searching for: \x1b[96m' + search + '\x1b[39m\n');
+
+server.listen(port, () => {
+    console.log(`Server running at http://localhost:${port}/`);
+});

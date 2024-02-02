@@ -1,4 +1,4 @@
-// create a web server that listens on port 3000
+// Create web server
 const http = require('http');
 const fs = require('fs');
 const url = require('url');
